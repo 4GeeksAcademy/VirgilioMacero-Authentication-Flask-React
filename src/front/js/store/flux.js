@@ -1,40 +1,12 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			message: null,
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			],
-			token: null
+
+			isLoged: false,
 
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-
-			getMessage: async () => {
-				try {
-					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
-					return data;
-				} catch (error) {
-					console.log("Error loading message from backend", error)
-				}
-			}, login: async (email, password) => {
+			login: async (email, password) => {
 
 				const opts = {
 					method: "POST",
@@ -46,13 +18,44 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				try {
 					const resp = await fetch(process.env.BACKEND_URL + "/api/token", opts)
+					if (resp.status === 404) {
+						alert("The username does not exist")
+
+					}
+					else if (resp.status === 409) {
+
+						alert("The password is incorrect")
+
+					}
+					else if (resp.status === 200) {
+						const json = await resp.json()
+						localStorage.setItem('token', json.token)
+						document.location.href = '/home'
+					}
+
+				} catch (error) {
+					console.error(error)
+				}
+
+			}, register: async (email, password) => {
+
+				const opts = {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({ "email": email, "password": password })
+				}
+
+				try {
+					const resp = await fetch(process.env.BACKEND_URL + "/api/register", opts)
 					if (resp.status !== 200) {
 						alert("There has ben an error")
 						return false
 					}
 					else {
-						const json = await resp.json()
-						const store = getStore()
+						alert("User Created Successfuly")
+						document.location.href = "/"
 					}
 
 				} catch (error) {
@@ -60,20 +63,19 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 
 			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
+			validateLogin: () => {
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
+				if (localStorage.getItem("token")) {
 
-				//reset the global store
-				setStore({ demo: demo });
-			}
+					setStore({ isLoged: true })
+
+				}
+				else {
+					setStore({ isLoged: false })
+				}
+
+			},
+
 		}
 	};
 };
